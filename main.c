@@ -64,16 +64,8 @@ char *get_ip_str(struct sockaddr *sa, char *s, size_t maxlen)
 }
 void info_addrinfo(struct addrinfo* i)
 {
-    char addr[1025]={0};
-    //char serv[32]={0};
+    char addr[40]={0};
     get_ip_str(i->ai_addr,addr,i->ai_addrlen);
-    /*
-     getnameinfo(
-                i->ai_addr,i->ai_addrlen,
-                addr,sizeof addr,
-                serv,sizeof serv,
-                (i->ai_protocol==IPPROTO_UDP?NI_DGRAM:0)|NI_NUMERICSERV );
-                */
     fprintf(stderr,"AddrInfo:%p \n"
             "  ai_flags:%x\n"
             "  ai_family:%i %s\n"
@@ -204,25 +196,6 @@ void wait4Response(int udp_socket,ntp_packet *np)
         fprintf(stderr,"No data within five seconds. Probably the address isn't a NTP server\n");
         exit(1);
     }
-}
-void printDateFormat()
-{
-//#define epoch21900 2208988800
-//        uint32_t to1970=(uint32_t)(ntohl(np->Tx_s)-epoch21900);
-//        printf("Received %i bytes, epoch: %u \n",Ef,to1970);
-//        char command[26+11+10]={0};
-//        sprintf(command,"/usr/bin/date -u --date='@%u'",to1970);
-//        memset(buffer,0,1024);
-//        FILE *f0=popen(command,"r");
-//        char date[100]={0};
-//        fgets(date,100,f0);
-//        if (pclose(f0))
-//        {
-//            fprintf(stderr,"Error executing 'date' command\n");
-//            exit(1);
-//        }
-//        printf("Date returned %s\n",date);
-//        //TODO Set date to command -s, or just output the date
 }
 void sendPacket(int udp_socket,ntp_packet *np )
 {
