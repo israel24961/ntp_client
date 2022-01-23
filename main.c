@@ -241,7 +241,7 @@ int main(int args, char** argc)
     ntp_info(&np);
 
     struct sockaddr_in ntpServerIp={0};//IPv4
-    getIP(&ntpServerIp,"es.pool.ntp.org");
+    getIP(&ntpServerIp,argc[1]);
 
     int udp_socket=socket(AF_INET,SOCK_DGRAM,0);
     connect2Server(udp_socket,&ntpServerIp);
