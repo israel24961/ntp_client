@@ -1,27 +1,31 @@
-#define _POSIX_C_SOURCE 200112L //Glibc getaddrinfo
+#include "main.h"
 
-#define DEBUG_NTP 1
-#include "ntp_packet.h"
+int main(int args, char** argc)
+{
+    ntp_packet np={0};
+    setupNTPPacket(&np);
+    ntp_info(&np);
 
+    struct sockaddr_in ntpServerIp={0};//IPv4
+    getIP(&ntpServerIp,argc[1]);
 
-//Standard
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+    int udp_socket=socket(AF_INET,SOCK_DGRAM,0);
+    connect2Server(udp_socket,&ntpServerIp);
+    sendPacket(udp_socket,&np);
 
+    ntp_packet Rnp={0};
+    wait4Response(udp_socket,&Rnp);
+    close(udp_socket);
+    uint32_t ReceivedTimeStamp=Rnp.Rx_s;
 
-//Glibc DNS resolver
-#include <sys/types.h>
-#include <sys/socket.h>
-#include  <netdb.h>
+    const uint32_t EpochTo1900=2208988800;//seconds between 1900 and 1970
+    uint32_t tm2Epoch=ntohl(ReceivedTimeStamp)-EpochTo1900;//Remember byte order in packet
+    fprintf(stderr,"Timestamp seconds:%u seconds, epoch:%u \n",ReceivedTimeStamp,tm2Epoch);
 
-//Filedescriptor
-#include <unistd.h>
-#include <sys/select.h>
+    printf("%u\n",tm2Epoch);
 
-#include <arpa/inet.h>
-
+    return 0;
+}
 void setupNTPPacket(ntp_packet* np)
 {
     ntp_setLi(np,0);
@@ -79,11 +83,11 @@ void info_addrinfo(struct addrinfo* i)
             i-> ai_flags,
             i-> ai_family, i-> ai_family==AF_INET6?"IPv6":"IPv4(if 2)",
             i-> ai_socktype,i->ai_socktype==SOCK_STREAM?"SOCK_STREAM":
-                            i->ai_socktype==SOCK_DGRAM?"SOCK_DGRAM":
-                            "Not STREAM nor DGRAM",
+            i->ai_socktype==SOCK_DGRAM?"SOCK_DGRAM":
+            "Not STREAM nor DGRAM",
             i-> ai_protocol, i-> ai_protocol==IPPROTO_TCP?"TCP":
-                             i-> ai_protocol==IPPROTO_UDP? "UDP":
-                                "No TCP/UDP",
+            i-> ai_protocol==IPPROTO_UDP? "UDP":
+            "No TCP/UDP",
             i-> ai_addrlen,
             addr, htons(((struct sockaddr_in*)i->ai_addr)->sin_port),
             i->ai_canonname,
@@ -139,7 +143,7 @@ void connect2Server(int udp_socket,struct sockaddr_in *ntpServerIp)
         fprintf(stderr,"Socket successfully made:[%i]...\n",udp_socket);
 
     int connecting= connect(udp_socket,(struct sockaddr *)ntpServerIp,
-                            sizeof(struct sockaddr_in));
+            sizeof(struct sockaddr_in));
 
     if (connecting)
     {
@@ -205,31 +209,4 @@ void sendPacket(int udp_socket,ntp_packet *np )
         fprintf(stderr,"Error writting from socket");
         exit(1);
     }
-}
-int main(int args, char** argc)
-{
-    fprintf(stderr,"Arguments: %i\n",args);
-    ntp_packet np={0};
-    setupNTPPacket(&np);
-    ntp_info(&np);
-
-    struct sockaddr_in ntpServerIp={0};//IPv4
-    getIP(&ntpServerIp,argc[1]);
-
-    int udp_socket=socket(AF_INET,SOCK_DGRAM,0);
-    connect2Server(udp_socket,&ntpServerIp);
-    sendPacket(udp_socket,&np);
-
-    ntp_packet Rnp={0};
-    wait4Response(udp_socket,&Rnp);
-    close(udp_socket);
-    uint32_t ReceivedTimeStamp=Rnp.Rx_s;
-
-    const uint32_t EpochTo1900=2208988800;//seconds between 1900 and 1970
-    uint32_t tm2Epoch=ntohl(ReceivedTimeStamp)-EpochTo1900;//Remember byte order in packet
-    fprintf(stderr,"Timestamp seconds:%u seconds, epoch:%u \n",ReceivedTimeStamp,tm2Epoch);
-
-    printf("%u\n",tm2Epoch);
-
-    return 0;
 }
